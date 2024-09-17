@@ -1,0 +1,84 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Wrapper of Twilio API
+  description: |
+    Wrapper of Twilio API so we can send adhoc sms etc. To use you need to make sure an applicationCode
+    has been setup in the SMS service so the correct Twilio Account and Auth Code can be looked up and
+    used by the SMS service. Each Twilio account is setup to send SMS either globally or to the countries
+    of choice.
+paths:
+  /sendSMS:
+    post:
+      summary: Send a transactional SMS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SMS'
+              example:
+                mobileNumber: "+447803122058"
+                applicationCode: "TW"
+                text: "Some SMS Text"
+      description: |
+        Sends a transactional SMS using the Twilio API. To be used when adhoc SMS need to be sent. For
+        general SMS marketing communication MCRM should be used where campaigns can be setup to send SMS
+        to groups of identified individuals
+      responses:
+        '204':
+          description: |
+            The SMS was created and sent successfully, no response body required
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unexpected error, try again later
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: A human readable error message
+          type: string
+    SMS:
+      type: object
+      description: |
+        The payload holds the mobile number which needs to be in E.164 format, the SMS text itself and
+        the applicationCode so if required the cost of sending the SMS can be assigned to the correct market
+      required:
+       - mobileNumber
+       - applicationCode
+       - text
+      properties:
+        mobileNumber:
+          type: string
+          description: |
+            Has to be in E.164 standard format e.g. a UK mobile number +447803122059
+        applicationCode:
+          type: string
+          description: |
+            Using the application code we lookup the Twilio Account and Twilio Auth Token as well as any
+            other information needed to send the SMS e.g. we may need a global Twilio from number                       
+        text:
+          type: string
+          description: |
+            The input string should be UTF-8 encoded. If the UTF-8 chars are only ASCII chars then GSM-7 is used
+            but if you use any non-ASCII characters then UCS-2 encoding is automatically used by Twilio. 
+            Additonally, Twilio prepends a User Data Header of 6 Bytes (this instructs
+            the receiving device on how to assemble messages), leaving 153 GSM-7 characters or
+            67 UCS-2 characters for your message. Hence why it is important to shorten URL's etc for UCS-2
+            messages, we only have 67 characters to use before the message is split into multiple messages
+            which will not be desirable
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+security:
+  - basicAuth: [] 
