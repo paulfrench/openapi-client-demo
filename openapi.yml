@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  version: 1.0.0
+  version: 1.3.1
   title: Wrapper of Twilio API
   description: |
     Wrapper of Twilio API so we can send adhoc sms etc. To use you need to make sure an applicationCode

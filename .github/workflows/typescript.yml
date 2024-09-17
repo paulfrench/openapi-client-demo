@@ -1,0 +1,46 @@
+name: Build and Deploy TypeScript Client
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow when code is pushed to the main branch
+
+jobs:
+  generate-client:
+    name: Generate TypeScript Client, Build, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js 18  # Specify the Node.js version you're using
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install OpenAPI Generator
+        run: |
+          npm install @openapitools/openapi-generator-cli -g
+
+      - name: Generate TypeScript Client from OpenAPI Spec
+        run: |
+          openapi-generator-cli generate \
+            -i ./openapi.yaml \   # Path to your OpenAPI spec in the repo
+            -g typescript-fetch \  # Use the 'typescript-fetch' generator
+            -o ./generated-client \
+            --additional-properties=typescriptThreePlus=true,npmName=my-api-client
+
+      - name: Install dependencies and build client
+        run: |
+          cd ./generated-client
+          npm install
+          npm run build
+
+#      - name: Publish to npm
+#        run: |
+#          cd ./generated-client
+#          npm publish
+#        env:
+#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}  # Use NPM_TOKEN stored in GitHub secrets

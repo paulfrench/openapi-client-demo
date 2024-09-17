@@ -1,0 +1,52 @@
+name: Build and Deploy Java Client
+
+on:
+  push:
+    branches:
+      - main  # Trigger this workflow on push to the main branch
+
+jobs:
+  generate-client:
+    name: Generate Java Client, Build, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17  # Specify the JDK version you're using
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      - name: Install OpenAPI Generator
+        run: |
+          wget https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.8.0/openapi-generator-cli-7.8.0.jar
+          sudo mv openapi-generator-cli-7.8.0.jar /usr/local/bin/openapi-generator-cli.jar
+
+      - name: Generate Java Client from OpenAPI Spec
+        run: |
+          java -jar /usr/local/bin/openapi-generator-cli.jar generate \
+            -i ./openapi.yaml \   # Path to your OpenAPI spec in the repo
+            -g java \
+            -o ./generated-client \
+            --artifact-id my-api-client \
+            --group-id com.openapi \
+            --additional-properties=library=resttemplate,dateLibrary=java8
+
+      - name: Build Maven Project
+        run: |
+          cd ./generated-client
+          mvn clean install
+
+#      - name: Deploy to Maven Repository
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # For GitHub Packages
+#          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}  # For Maven Central/Private Repo
+#          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}  # For Maven Central/Private Repo
+#        run: |
+#          cd ./generated-client
+#          mvn deploy -DskipTests=true -DaltDeploymentRepository=<repository-id>::default::https://<your-maven-repo-url>
+
