@@ -1,84 +1,69 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  version: 1.3.1
-  title: Wrapper of Twilio API
-  description: |
-    Wrapper of Twilio API so we can send adhoc sms etc. To use you need to make sure an applicationCode
-    has been setup in the SMS service so the correct Twilio Account and Auth Code can be looked up and
-    used by the SMS service. Each Twilio account is setup to send SMS either globally or to the countries
-    of choice.
+  title: Email Communication Service API
+  version: 1.2.0
+  description: API for sending emails, including attachments via multipart/form-data, with CC, BCC, and selecting an SMTP service based on MarketParticipant ID.
+servers:
+  - url: /api/v1
+
 paths:
-  /sendSMS:
+  /emails/send:
     post:
-      summary: Send a transactional SMS
+      summary: Send an email with attachments
+      description: Sends an email with optional attachments, CC, and BCC fields. Connects to the appropriate SMTP service based on the MarketParticipant ID.
+      tags:
+        - Email
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/SMS'
-              example:
-                mobileNumber: "+447803122058"
-                applicationCode: "TW"
-                text: "Some SMS Text"
-      description: |
-        Sends a transactional SMS using the Twilio API. To be used when adhoc SMS need to be sent. For
-        general SMS marketing communication MCRM should be used where campaigns can be setup to send SMS
-        to groups of identified individuals
+              type: object
+              properties:
+                to:
+                  type: array
+                  description: list of recipient email addresses
+                  items:
+                    type: string
+                    format: email
+                cc:
+                  type: array
+                  description: list of CC email addresses (optional)
+                  items:
+                    type: string
+                    format: email
+                bcc:
+                  type: array
+                  description: list of BCC email addresses (optional)
+                  items:
+                    type: string
+                    format: email
+                from:
+                  type: string
+                  format: email
+                  description: Email address of the sender
+                subject:
+                  type: string
+                  description: Subject of the email
+                  example: "Welcome to our service"
+                body:
+                  type: string
+                  description: Body content of the email
+                  example: "Thank you for signing up."
+                marketParticipantId:
+                  type: string
+                  description: Identifier to select the SMTP service
+                  example: "MPID-12345"
+                attachments:
+                  type: array
+                  description: Send  mulitple file attachments
+                  items:
+                    type: string
+                    format: binary
       responses:
-        '204':
-          description: |
-            The SMS was created and sent successfully, no response body required
+        '200':
+          description: Email sent successfully
+        '400':
+          description: Invalid input
         '500':
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                message: Unexpected error, try again later
-components:
-  schemas:
-    Error:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          description: A human readable error message
-          type: string
-    SMS:
-      type: object
-      description: |
-        The payload holds the mobile number which needs to be in E.164 format, the SMS text itself and
-        the applicationCode so if required the cost of sending the SMS can be assigned to the correct market
-      required:
-       - mobileNumber
-       - applicationCode
-       - text
-      properties:
-        mobileNumber:
-          type: string
-          description: |
-            Has to be in E.164 standard format e.g. a UK mobile number +447803122059
-        applicationCode:
-          type: string
-          description: |
-            Using the application code we lookup the Twilio Account and Twilio Auth Token as well as any
-            other information needed to send the SMS e.g. we may need a global Twilio from number                       
-        text:
-          type: string
-          description: |
-            The input string should be UTF-8 encoded. If the UTF-8 chars are only ASCII chars then GSM-7 is used
-            but if you use any non-ASCII characters then UCS-2 encoding is automatically used by Twilio. 
-            Additonally, Twilio prepends a User Data Header of 6 Bytes (this instructs
-            the receiving device on how to assemble messages), leaving 153 GSM-7 characters or
-            67 UCS-2 characters for your message. Hence why it is important to shorten URL's etc for UCS-2
-            messages, we only have 67 characters to use before the message is split into multiple messages
-            which will not be desirable
-  securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-security:
-  - basicAuth: [] 
+          description: Error occurred while sending email
