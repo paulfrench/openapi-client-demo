@@ -36,7 +36,6 @@ jobs:
             -o ./generated-client \
             --artifact-id my-java-client \
             --group-id com.openapi
-
       # Step 4: Set up Java again, but now enable Maven caching since pom.xml is available
       - name: Set up JDK 17 (with Maven cache)
         uses: actions/setup-java@v3
