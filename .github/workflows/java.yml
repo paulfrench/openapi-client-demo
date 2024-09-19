@@ -48,6 +48,12 @@ jobs:
         run: |
           cd ./generated-client
           mvn clean install
+      # Step 6: Deploy to Github
+ # Upload the generated JAR file as an artifact
+      - name: Upload JAR file
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./generated-client/target/my-java-client-*.jar      
 
       # Step 6: Deploy to Maven Repository
 #      - name: Deploy to Maven Repository
