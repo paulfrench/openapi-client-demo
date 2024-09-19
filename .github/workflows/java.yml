@@ -24,13 +24,17 @@ jobs:
       # Step 2: Install OpenAPI Generator
       - name: Install OpenAPI Generator
         run: |
-          wget https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.8.0/openapi-generator-cli-7.8.0.jar
-          sudo mv openapi-generator-cli-7.8.0.jar /usr/local/bin/openapi-generator-cli.jar
+          wget https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.8.0/openapi-generator-cli-7.8.0.jar -O openapi-generator-cli.jar
 
       # Step 3: Generate Java Client from OpenAPI Spec (this creates the pom.xml)
       - name: Generate Java Client from OpenAPI Spec
         run: |
-          java -jar /usr/local/bin/openapi-generator-cli.jar generated -i ./openapi.yml -g java -o ./generated-client --artifact-id my-java-client --group-id com.openapi
+          java -jar openapi-generator-cli.jar generate \
+          -i ./openapi.yml \
+          -g java \
+          -o ./generated-client \
+          --artifact-id my-java-client \
+          --group-id com.openapi
       # Step 4: Set up Java again, but now enable Maven caching since pom.xml is available
       - name: Set up JDK 17 (with Maven cache)
         uses: actions/setup-java@v3
