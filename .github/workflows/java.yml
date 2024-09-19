@@ -30,11 +30,11 @@ jobs:
       # Step 3: Generate Java Client from OpenAPI Spec (this creates the pom.xml)
       - name: Generate Java Client from OpenAPI Spec
         run: |
-          java -jar /usr/local/bin/openapi-generator-cli.jar generate \
-            -i ./openapi.yml \   # Path to your OpenAPI spec in the repo
-            -g java \
-            -o ./generated-client \
-            --artifact-id my-java-client \
+          java -jar /usr/local/bin/openapi-generator-cli.jar generate
+            -i ./openapi.yml
+            -g java
+            -o ./generated-client
+            --artifact-id my-java-client
             --group-id com.openapi
       # Step 4: Set up Java again, but now enable Maven caching since pom.xml is available
       - name: Set up JDK 17 (with Maven cache)
