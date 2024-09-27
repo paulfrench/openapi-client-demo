@@ -1,69 +1,1201 @@
 openapi: 3.0.3
 info:
-  title: Email Communication Service API
-  version: 1.2.0
-  description: API for sending emails, including attachments via multipart/form-data, with CC, BCC, and selecting an SMTP service based on MarketParticipant ID.
+  title: Billing platform
+  description: Billing platform
+  version: '0.1'
+
+security:
+  - jwt: [ ]
+
 servers:
-  - url: /api/v1
+  - url: /v1
 
 paths:
-  /emails/send:
+  /security/authenticate:
     post:
-      summary: Send an email with attachments
-      description: Sends an email with optional attachments, CC, and BCC fields. Connects to the appropriate SMTP service based on the MarketParticipant ID.
+      summary: Get JWT token
+      description: Get the JWT token to use for calling other endpoints
       tags:
-        - Email
+        - sync
+        - frontend
+        - integrated
+      security: [ ] #no security
       requestBody:
-        required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              type: object
-              properties:
-                to:
-                  type: array
-                  description: list of recipient email addresses
-                  items:
-                    type: string
-                    format: email
-                cc:
-                  type: array
-                  description: list of CC email addresses (optional)
-                  items:
-                    type: string
-                    format: email
-                bcc:
-                  type: array
-                  description: list of BCC email addresses (optional)
-                  items:
-                    type: string
-                    format: email
-                from:
-                  type: string
-                  format: email
-                  description: Email address of the sender
-                subject:
-                  type: string
-                  description: Subject of the email
-                  example: "Welcome to our service"
-                body:
-                  type: string
-                  description: Body content of the email
-                  example: "Thank you for signing up."
-                marketParticipantId:
-                  type: string
-                  description: Identifier to select the SMTP service
-                  example: "MPID-12345"
-                attachments:
-                  type: array
-                  description: Send  mulitple file attachments
-                  items:
-                    type: string
-                    format: binary
+              $ref: '#/components/schemas/AuthenticationRequest'
       responses:
         '200':
-          description: Email sent successfully
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /security/refreshToken:
+    post:
+      summary: Refresh token
+      description: Extend a valid jwt token
+      tags:
+        - sync
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+
+  /users/create:
+    post:
+      summary: Create a new user
+      description: Create a new user and return the new user id
+      tags:
+        - sync
+        - topic-create
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: Created User
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserRequest'
         '400':
-          description: Invalid input
-        '500':
-          description: Error occurred while sending email
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /users/username-check:
+    parameters:
+      - in: query
+        name: username
+        schema:
+          type: string
+        required: false
+        description: The username of the customer
+    get:
+      summary: Returns a valid new username
+      description: >
+        Username is the format <lastname><first letter of firstname>, this GET request checks whether the username already exists.
+        If it does, it increments the username by one. For example, John Smith would be smithj.
+        If smithj already exists, it would return smithj1. If smithj1 already exists, it would return smithj2, and so on.
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      responses:
+        '200':
+          description: New username
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewUsernameResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /users/{userAccountId}:
+    get:
+      summary: Returns a user
+      description: Returns a user with the given userAccountId
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: userAccountId
+          schema:
+            type: integer
+          required: true
+          description: The ID of the User
+      responses:
+        '200':
+          description: User Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+    put:
+      summary: Update an existing user
+      description: Update an existing user
+      tags:
+        - sync
+        - topic-update
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: userAccountId
+          schema:
+            type: integer
+          required: true
+          description: The ID of the User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserRequest'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /users:
+    get:
+      summary: Returns all users
+      description: Returns all users
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      responses:
+        '200':
+          description: users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsersResponse'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /teams/create:
+    post:
+      summary: Create a new team
+      description: Create a new team
+      tags:
+        - sync
+        - topic-create
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeamRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTeamRequest'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /teams/{teamId}:
+    get:
+      summary: Returns a team
+      description: Returns a team with the given teamId
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: teamId
+          schema:
+            type: integer
+          required: true
+          description: The ID of the Team
+      responses:
+        '200':
+          description: Team Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+    put:
+      summary: Update an existing team
+      description: Update an existing team
+      tags:
+        - sync
+        - topic-update
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeamRequest'
+      parameters:
+        - in: path
+          name: teamId
+          required: true
+          schema:
+            type: integer
+          description: The ID of the team
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTeamRequest'
+        400:
+          $ref: '#/components/responses/400'
+        401:
+          $ref: '#/components/responses/401'
+    delete:
+      summary: Delete an existing team
+      description: Delete an existing team
+      tags:
+        - sync
+        - topic-delete
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: teamId
+          required: true
+          schema:
+            type: integer
+          description: The ID of the team
+      responses:
+        '204':
+          $ref: '#/components/responses/204'
+        '404':
+          $ref: '#/components/responses/404'
+
+  /teams:
+    get:
+      summary: Returns all teams
+      description: Returns all teams
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      responses:
+        '200':
+          description: teams
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamsResponse'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+  /templates:
+    get:
+      summary: Returns all templates
+      description: Returns all templates
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      responses:
+        '200':
+          description: Templates fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TemplatesResponseNoPages'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /templates/create:
+    post:
+      summary: Create a new template
+      description: Create a new template and return the new template id
+      tags:
+        - sync
+        - topic-create
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTemplateRequest'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /templates/base/{userRoleId}:
+    get:
+      summary: Returns a valid base template object
+      description: Returns a valid base template object
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: userRoleId
+          schema:
+            type: integer
+          required: true
+          description: The userRoleId associated with the base template
+      responses:
+        '200':
+          description: basetemplate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseTemplateResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /templates/{templateId}:
+    get:
+      summary: Returns a valid template object
+      description: Returns a valid template object
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: templateId
+          schema:
+            type: integer
+          required: true
+          description: The id of the template
+      responses:
+        '200':
+          description: template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+    put:
+      summary: Update an existing template
+      description: Update specific fields of an existing template
+      tags:
+        - sync
+        - topic-update
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: templateId
+          schema:
+            type: integer
+          required: true
+          description: The ID of the template to update
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTemplateRequest'
+      responses:
+        200:
+          description: Template updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTemplateRequest'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /templates/users/{username}:
+    get:
+      summary: Returns a valid template
+      description: Returns a valid template
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      parameters:
+        - in: path
+          name: username
+          schema:
+            type: string
+          required: true
+          description: The username
+      responses:
+        '200':
+          description: template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+
+  /userroles/{userRoleId}:
+    get:
+      summary: Returns a valid user role
+      description: Returns a valid user role
+      tags:
+        - sync
+        - frontend-not-ready
+        - topic-fetch
+      parameters:
+        - in: path
+          name: userRoleId
+          schema:
+            type: integer
+          required: true
+          description: The id of the UserRole
+      responses:
+        '200':
+          description: UserRole
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRoleResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /userroles:
+    get:
+      summary: Returns all user roles
+      description: Returns all user roles
+      tags:
+        - sync
+        - topic-fetch
+        - frontend
+        - integrated
+      responses:
+        '200':
+          description: user roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRolesResponse'
+        '401':
+          $ref: '#/components/responses/401'
+
+  /passwords/reset:
+    post:
+      summary: Reset a user password
+      description: Reset a user password
+      tags:
+        - sync
+        - topic-create
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetRequest'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+
+  /passwords/change:
+    post:
+      summary: change a user password
+      description: change a user password
+      tags:
+        - sync
+        - topic-create
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordChangeRequest'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+
+  /passwords/validate-token:
+    post:
+      summary: Validate a password reset token
+      description: Validate a password reset token
+      tags:
+        - sync
+        - topic-create
+        - frontend
+        - integrated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateTokenRequest'
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateTokenRequest'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '404':
+          $ref: '#/components/responses/404'
+
+components:
+  securitySchemes:
+    jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    '204':
+      description: Success but no content returned
+    '400':
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '401':
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    '404':
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Acknowledge:
+      description: A message to confirm that the message is structurally valid and is scheduled for further processing.
+      content:
+        application/json:
+          schema:
+            type: object
+            items:
+              $ref: '#/components/schemas/Acknowledge'
+          example:
+            correlationId: b6f8dab7-0523-45e3-af09-906fe7522c49
+
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        errorCode:
+          type: string
+        errorSeverity:
+          type: string
+        errorDescription:
+          type: string
+
+    AuthenticationRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthenticationResponse:
+      type: object
+      required:
+        - token
+        - expiresIn
+        - tokenType
+      properties:
+        token:
+          type: string
+          description: The JWT token to use for authentication
+        expiresIn:
+          type: integer
+          format: int64
+          description: The seconds in which the token will expire
+        tokenType:
+          type: string
+          description: The type of the token
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+
+    CreateTeamRequest:
+      required:
+        - teamName
+        - templateId
+      allOf:
+        - $ref: '#/components/schemas/Team'
+
+    CreateUserRequest:
+      x-implements: [
+        'com.esgglobal.billing.service.validation.validatable.UserAccountValidatable',
+        'com.esgglobal.billing.service.validation.validatable.UserRoleValidatable',
+        'com.esgglobal.billing.service.validation.validatable.TemplateValidatable'
+      ]
+      type: object
+      required:
+        - username
+        - firstName
+        - lastName
+        - emailAddress
+        - isActive
+        - userRoleId
+        - templateId
+      properties:
+        templateId:
+          type: integer
+          nullable: true
+      allOf:
+        - $ref: '#/components/schemas/User'
+
+    UpdateUserRequest:
+      x-implements: [
+        'com.esgglobal.billing.service.validation.validatable.UserAccountValidatable',
+        'com.esgglobal.billing.service.validation.validatable.TeamValidatable',
+        'com.esgglobal.billing.service.validation.validatable.UserRoleValidatable',
+        'com.esgglobal.billing.service.validation.validatable.TemplateValidatable'
+      ]
+      type: object
+      required:
+        - username
+        - firstName
+        - lastName
+        - emailAddress
+        - isActive
+        - teamId
+        - userRoleId
+        - templateId
+      properties:
+        templateId:
+          nullable: true
+          type: integer
+      allOf:
+        - $ref: '#/components/schemas/User'
+
+    UserResponse:
+      type: object
+      properties:
+        userAccountId:
+          type: integer
+        templateId:
+          type: integer
+        teamName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Example_team"
+        templateName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Base_template"
+      allOf:
+        - $ref: '#/components/schemas/User'
+
+    UsersResponse:
+      type: array
+      minItems: 0
+      items:
+        $ref: '#/components/schemas/UserResponse'
+
+    TeamResponse:
+      type: object
+      properties:
+        teamId:
+          type: integer
+        teamTemplate:
+          type: string
+      allOf:
+        - $ref: '#/components/schemas/Team'
+
+
+    TeamsResponse:
+      type: array
+      minItems: 1
+      items:
+        $ref: '#/components/schemas/TeamResponse'
+
+
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 2
+          maxLength: 55
+        firstName:
+          type: string
+          pattern: '^[^\s!@#$%^&*()\d]+(?:\s[^\s!@#$%^&*()\d]+)*$'
+          minLength: 1
+          maxLength: 50
+        lastName:
+          type: string
+          minLength: 1
+          pattern: '^[^\s!@#$%^&*()\d]+(?:\s[^\s!@#$%^&*()\d]+)*$'
+          maxLength: 50
+        emailAddress:
+          type: string
+          format: email
+          pattern: "^[!#$%&'*+-/=?^_`A-Za-z0-9]+@[A-Za-z0-9.-]+\\.[A-Za-z]{1,}$"
+          minLength: 6
+          maxLength: 50
+        isActive:
+          type: boolean
+        teamId:
+          type: integer
+        userRoleId:
+          type: integer
+        photoId:
+          type: integer
+        createdDate:
+          type: string
+          format: date
+          example: "2024-03-20"
+        createdBy:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+
+    Team:
+      type: object
+      properties:
+        teamName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Example_team"
+        templateId:
+          type: integer
+        teamMembers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+
+    UpdateTeamRequest:
+      type: object
+      required:
+        - teamName
+        - templateId
+      properties:
+        teamName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Example_team"
+        templateId:
+          type: integer
+        teamMembers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+
+    TeamMember:
+      type: object
+      required:
+        - userAccountId
+        - username
+      properties:
+        userAccountId:
+          type: integer
+        username:
+          type: string
+          minLength: 1
+          maxLength: 55
+
+    CreateTemplateRequest:
+      type: object
+      required:
+        - templateName
+        - templateStatus
+        - userRole
+        - pages
+      properties:
+        templateName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Base_template"
+        templateStatus:
+          $ref: '#/components/schemas/TemplateStatus'
+        userRole:
+          type: string
+          minLength: 1
+          maxLength: 30
+          description: "The name of the user role associated with this template"
+          example: "Administrator"
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Page'
+
+    UpdateTemplateRequest:
+      type: object
+      properties:
+        templateName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Base_template"
+        templateStatus:
+          $ref: '#/components/schemas/TemplateStatus'
+        userRole:
+          type: string
+          minLength: 1
+          maxLength: 30
+          description: "The name of the user role associated with this template"
+          example: "Administrator"
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Page'
+
+    TemplatesResponseNoPages:
+      type: object
+      properties:
+        templateId:
+          type: integer
+        templateName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Billing"
+        templateStatus:
+          $ref: '#/components/schemas/TemplateStatus'
+        userRole:
+          type: string
+          minLength: 1
+          maxLength: 30
+          example: Administrator or Manager or Agent
+        baseTemplateVersion:
+          type: integer
+        userTemplateVersion:
+          type: integer
+
+    TemplateResponse:
+      type: object
+      properties:
+        templateId:
+          type: integer
+        templateName:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z][a-zA-Z\s_-]*[a-zA-Z]$'
+          example: "Billing"
+        templateStatus:
+          $ref: '#/components/schemas/TemplateStatus'
+        userRole:
+          type: string
+          minLength: 1
+          maxLength: 30
+          example: Administrator or Manager or Agent
+        baseTemplateVersion:
+          type: integer
+        userTemplateVersion:
+          type: integer
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Page'
+
+    TemplatesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/TemplateResponse'
+
+
+    TemplateStatus:
+      description: status for templates
+      type: string
+      enum: [ Live, Base, Draft ]
+      minLength: 1
+      maxLength: 20
+
+    UserRoleResponse:
+      allOf:
+        - $ref: '#/components/schemas/UserRole'
+
+
+    UserRole:
+      type: object
+      properties:
+        userRoleId:
+          type: integer
+          nullable: false
+          example: 1
+        userRoleName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          nullable: false
+          example: administrator
+
+    UserRolesResponse:
+      type: array
+      minItems: 1
+      items:
+        $ref: '#/components/schemas/UserRole'
+
+    NewUsernameResponse:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          minLength: 2
+          maxLength: 55
+          description: The new username
+
+    BaseTemplateResponse:
+      type: object
+      properties:
+        templateId:
+          type: integer
+        templateName:
+          type: string
+        templateStatus:
+          type: string
+        baseTemplateVersion:
+          type: integer
+        userRole:
+          type: string
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Page'
+
+    PasswordResetRequest:
+      x-implements: [
+        'com.esgglobal.billing.service.validation.validatable.EmailValidatable',
+      ]
+      type: object
+      required:
+        - emailAddress
+      properties:
+        emailAddress:
+          type: string
+          format: email
+          pattern: "^[!#$%&'*+-/=?^_`A-Za-z0-9]+@[A-Za-z0-9.-]+\\.[A-Za-z]{1,}$"
+          minLength: 6
+          maxLength: 50
+
+    PasswordChangeRequest:
+      x-implements: [
+        'com.esgglobal.billing.service.validation.validatable.PasswordChangeValidatable',
+      ]
+      type: object
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          format: password
+          pattern: '^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,16}$'
+          minLength: 8
+          maxLength: 16
+
+    ValidateTokenRequest:
+      x-implements: [
+        'com.esgglobal.billing.service.validation.validatable.ValidateTokenValidatable',
+      ]
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+
+    Page:
+      type: object
+      properties:
+        displayName:
+          type: string
+        pageName:
+          type: string
+        access:
+          $ref: '#/components/schemas/PageAccessEnum'
+        screens:
+          type: array
+          items:
+            $ref: '#/components/schemas/Screen'
+
+    Screen:
+      type: object
+      properties:
+        displayName:
+          type: string
+        screenName:
+          type: string
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+
+    Component:
+      type: object
+      properties:
+        componentName:
+          type: string
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+        elements:
+          $ref: '#/components/schemas/Element'
+
+    Element:
+      nullable: true
+      type: object
+      properties:
+        fields:
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+        buttons:
+          nullable: true
+          type: array
+          items:
+            $ref: '#/components/schemas/Button'
+
+    Field:
+      type: object
+      properties:
+        elementName:
+          type: string
+        displayName:
+          type: string
+        access:
+          $ref: '#/components/schemas/FieldAccessEnum'
+
+    Button:
+      type: object
+      properties:
+        elementName:
+          type: string
+        displayName:
+          type: string
+        access:
+          $ref: '#/components/schemas/ButtonAccessEnum'
+
+    FieldAccessEnum:
+      type: string
+      enum:
+        - hide
+        - read
+        - write
+
+    ButtonAccessEnum:
+      type: string
+      enum:
+        - hide
+        - enabled
+
+    PageAccessEnum:
+      type: string
+      enum:
+        - noAccess
+        - read
+        - write
+        - custom
+
+
+    Acknowledge:
+      type: object
+      required:
+        - correlationId
+      properties:
+        correlationId:
+          type: string

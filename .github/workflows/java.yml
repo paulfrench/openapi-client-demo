@@ -1,10 +1,10 @@
 name: Build and Deploy Java Client
 
 on:
-  push:
-    branches:
-      - main  # Trigger the workflow on push to the main branch
-
+  workflow_run:
+    workflows: ["Tag Repo from OpenAPI Version"]
+    types:
+      - completed
 jobs:
   generate-client:
     name: Generate Java Client, Build, and Deploy

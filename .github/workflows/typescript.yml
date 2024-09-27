@@ -1,9 +1,10 @@
 name: Build and Deploy TypeScript Client
 
 on:
-  push:
-    branches:
-      - main  # Trigger the workflow when code is pushed to the main branch
+  workflow_run:
+    workflows: ["Tag Repo from OpenAPI Version"]
+    types:
+      - completed
 
 jobs:
   generate-client:
@@ -37,6 +38,10 @@ jobs:
           cd ./generated-client
           npm install
           npm run build
+      - name: Upload Javascript Module file
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./generated-client/my-api-client.js
 
 #      - name: Publish to npm
 #        run: |
