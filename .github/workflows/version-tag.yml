@@ -6,6 +6,9 @@ on:
       - main  # Trigger on push to the main branch (adjust branch as needed)
   workflow_dispatch:  # Allow manual triggering
 
+permissions:
+  contents: write  # Allows creating and pushing tags  
+  
 jobs:
   tag:
     runs-on: ubuntu-latest
