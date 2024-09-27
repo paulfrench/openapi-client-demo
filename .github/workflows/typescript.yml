@@ -10,7 +10,8 @@ jobs:
   generate-client:
     name: Generate TypeScript Client, Build, and Deploy
     runs-on: ubuntu-latest
-
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}  # Only run if tagging was successful
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
