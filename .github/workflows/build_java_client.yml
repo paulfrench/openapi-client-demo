@@ -1,0 +1,54 @@
+name: Build and Deploy Java Client
+
+on:
+  workflow_run:
+    workflows: ["<name of main server build job>"]
+    types:
+      - completed
+jobs:
+  generate-client:
+    name: Generate Java Client, Build, and Deploy
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}  # Only run if server side project was built successfully
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 1: Set up Java without caching (since pom.xml doesn't exist yet)
+      - name: Set up JDK 17 (without cache)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Step 2: Install OpenAPI Generator
+      - name: Install OpenAPI Generator
+        run: |
+          wget https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/7.8.0/openapi-generator-cli-7.8.0.jar -O openapi-generator-cli.jar
+
+      # Step 3: Generate Java Client from OpenAPI Spec (this creates the pom.xml)
+      - name: Generate Java Client from OpenAPI Spec
+        run: |
+          java -jar openapi-generator-cli.jar generate \
+          -i ./openapi.yml \
+          -g java \
+          -o ./generated-client \
+          --artifact-id my-java-client \
+          --group-id com.esgglobal
+      # Step 4: Set up Java again, but now enable Maven caching since pom.xml is available
+      - name: Set up JDK 17 (with Maven cache)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven  # Maven caching is enabled here now that pom.xml exists
+
+      # Step 5: Build and deploy  the Maven Project (now with caching)
+      - name: Clean and Deploy to Maven Repository
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}  # For Maven Central/Private Repo
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}  # For Maven Central/Private Repo
+        run: |
+          cd ./generated-client
+          mvn clean deploy -DaltDeploymentRepository=<repository-id>::default::https://<your-maven-repo-url>
